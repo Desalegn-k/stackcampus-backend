@@ -69,7 +69,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const app = express();
-const port = 5300;
+// const port = 5300;
 
 // DB
 const dbconnection = require("./db/dbConfig");
@@ -94,8 +94,8 @@ app.use("/api/answers", answerRoutes);
 async function start() {
   try {
     await dbconnection.execute("SELECT 'test'");
-    app.listen(port, () => {
-      console.log(`Server running on port ${port}`);
+    app.listen(process.env.PORT,'0,0,0,0', () => {
+      console.log(`Server running on port ${process.env.PORT}`);
       console.log("Database connection established ");
     });
   } catch (error) {
