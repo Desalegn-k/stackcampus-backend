@@ -94,7 +94,7 @@ app.use("/api/answers", answerRoutes);
 async function start() {
   try {
     await dbconnection.execute("SELECT 'test'");
-    app.listen(process.env.PORT || 5300,'0,0,0,0', () => {
+    app.listen(process.env.PORT || 5300,'0.0.0.0', () => {
       console.log(`Server running on port ${process.env.PORT}`);
       console.log("Database connection established ");
     });
