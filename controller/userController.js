@@ -3,8 +3,8 @@ const dbconnection = require("../db/dbConfig");
 const bcrypt=require("bcrypt");
 const statusCode = require("http-status-codes");
 const jwt=require("jsonwebtoken")
-const crypto = require("crypto");
-const nodemailer = require("nodemailer");
+// const crypto = require("crypto");
+// const nodemailer = require("nodemailer");
 
 
 async function register(req, res) {
@@ -242,6 +242,9 @@ async function checkUser(req, res) {
 
  
 
+const crypto = require("crypto");
+const nodemailer = require("nodemailer");
+
 async function forgotPassword(req, res) {
   const { email } = req.body;
   if (!email) return res.status(400).json({ msg: "Email required" });
@@ -265,16 +268,31 @@ async function forgotPassword(req, res) {
       [token, expires, email]
     );
 
-    // 4. Configure Nodemailer
+    // 4. Configure Nodemailer with explicit SMTP settings
     const transporter = nodemailer.createTransport({
-      service: "gmail",
+      host: "smtp.gmail.com",
+      port: 465, // use 587 with secure: false if needed
+      secure: true, // true for port 465, false for 587
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
       },
     });
 
-    // 5. Send reset link email
+    // 5. Verify SMTP connection before sending email
+    try {
+      await transporter.verify();
+      console.log("✅ SMTP ready");
+    } catch (smtpErr) {
+      console.error("SMTP Error:", smtpErr);
+      return res
+        .status(500)
+        .json({
+          msg: "SMTP connection failed. Check email credentials or Render network settings.",
+        });
+    }
+
+    // 6. Send reset link email
     const link = `https://stack-campus.onrender.com/reset-password/${token}`;
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
@@ -287,10 +305,13 @@ async function forgotPassword(req, res) {
       msg: "Reset link sent to your email, please check your inbox.",
     });
   } catch (err) {
-    console.error(err.message);
-    res.status(500).json({ msg: "Something went wrong" });
+    console.error("Forgot Password Error:", err);
+    res.status(500).json({ msg: "Something went wrong. Check server logs." });
   }
 }
+
+module.exports = forgotPassword;
+
 
 
 async function resetPassword(req, res) {
