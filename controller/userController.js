@@ -271,7 +271,7 @@ async function forgotPassword(req, res) {
     );
 
     // 4️⃣ Send password reset email
-    const link = `https://stack-campus.onrender.com/reset-password/${token}`;
+    const link = `https://stack-campus.onrender.com/#/reset-password/${token}`;
 
     await resend.emails.send({
       from: "Stack Campus <onboarding@resend.dev>",
