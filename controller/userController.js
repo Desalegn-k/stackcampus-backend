@@ -4,7 +4,7 @@ const bcrypt=require("bcrypt");
 const statusCode = require("http-status-codes");
 const jwt=require("jsonwebtoken");
 const { Resend } = require("resend");
-// const crypto = require("crypto");
+const crypto = require("crypto");
 // const nodemailer = require("nodemailer");
 
 
