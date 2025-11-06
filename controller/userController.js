@@ -3,6 +3,7 @@ const dbconnection = require("../db/dbConfig");
 const bcrypt=require("bcrypt");
 const statusCode = require("http-status-codes");
 const jwt=require("jsonwebtoken")
+import { Resend } from "resend";
 // const crypto = require("crypto");
 // const nodemailer = require("nodemailer");
 
@@ -241,13 +242,9 @@ async function checkUser(req, res) {
 
 
  
-
-const crypto = require("crypto");
-const nodemailer = require("nodemailer");
-
-async function forgotPassword(req, res) {
+export async function forgotPassword(req, res) {
   const { email } = req.body;
-  if (!email) return res.status(400).json({ msg: "Email required" });
+  if (!email) return res.status(400).json({ msg: "Email is required" });
 
   try {
     // 1. Check if user exists
@@ -255,62 +252,51 @@ async function forgotPassword(req, res) {
       "SELECT * FROM users WHERE email = ?",
       [email]
     );
+
     if (users.length === 0)
       return res.status(404).json({ msg: "User not found" });
 
-    // 2. Generate token valid for 15 minutes
+    // 2. Generate reset token
     const token = crypto.randomBytes(32).toString("hex");
-    const expires = new Date(Date.now() + 15 * 60 * 1000);
+    const expires = new Date(Date.now() + 15 * 60 * 1000); // expires in 15 min
 
-    // 3. Store token in DB
+    // 3. Save token and expiry to database
     await dbconnection.query(
       "UPDATE users SET resetToken = ?, resetTokenExpires = ? WHERE email = ?",
       [token, expires, email]
     );
 
-    // 4. Configure Nodemailer with explicit SMTP settings
-    const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 465, // use 587 with secure: false if needed
-      secure: true, // true for port 465, false for 587
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
+    // 4. Setup Resend client
+    const resend = new Resend(process.env.RESEND_API_KEY);
 
-    // 5. Verify SMTP connection before sending email
-    try {
-      await transporter.verify();
-      console.log("✅ SMTP ready");
-    } catch (smtpErr) {
-      console.error("SMTP Error:", smtpErr);
-      return res
-        .status(500)
-        .json({
-          msg: "SMTP connection failed. Check email credentials or Render network settings.",
-        });
-    }
-
-    // 6. Send reset link email
+    // 5. Build reset link
     const link = `https://stack-campus.onrender.com/reset-password/${token}`;
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+
+    // 6. Send the email
+    await resend.emails.send({
+      from: "Stack Campus-desalegn <onboarding@resend.dev>",
       to: email,
       subject: "Password Reset Link",
-      html: `<p>Click <a href="${link}">here</a> to reset your password. The link expires in 15 minutes.</p>`,
+      html: `
+        <p>Hi,</p>
+        <p>You requested to reset your password. Click the link below:</p>
+        <p><a href="${link}" target="_blank">${link}</a></p>
+        <p>This link will expire in <strong>15 minutes</strong>.</p>
+        <p>If you did not request this, you can safely ignore it.</p>
+      `,
     });
 
-    res.json({
-      msg: "Reset link sent to your email, please check your inbox.",
-    });
+    // 7. Send success response
+    res
+      .status(200)
+      .json({ msg: "Reset link sent successfully to your email." });
   } catch (err) {
-    console.error("Forgot Password Error:", err);
-    res.status(500).json({ msg: "Something went wrong. Check server logs." });
+    console.error("Forgot password error:", err);
+    res
+      .status(500)
+      .json({ msg: "Failed to send reset link", error: err.message });
   }
 }
-
-module.exports = forgotPassword;
 
 
 
