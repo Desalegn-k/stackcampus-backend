@@ -1,10 +1,8 @@
 // dbconnection
- 
 const dbconnection = require("../db/dbConfig");
 const bcrypt=require("bcrypt");
 const statusCode = require("http-status-codes");
 const jwt=require("jsonwebtoken")
-import { Resend } from "resend";
 // const crypto = require("crypto");
 // const nodemailer = require("nodemailer");
 
@@ -285,6 +283,8 @@ async function forgotPassword(req, res) {
     res.status(500).json({ msg: "Something went wrong." });
   }
 }
+
+
 
 async function resetPassword(req, res) {
   const { token } = req.params;
