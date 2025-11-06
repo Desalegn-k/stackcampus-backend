@@ -177,6 +177,22 @@ async function forgotPassword(req, res) {
   if (!email) return res.status(400).json({ msg: "Email required" });
 
   try {
+    // const [user] = await dbconnection.query(
+    //   "SELECT * FROM users WHERE email = ?",
+    //   [email]
+    // );
+    // if (user.length === 0)
+    //   return res.status(404).json({ msg: "User not found" });
+
+    // // Generate token valid for 15 minutes
+    // const token = crypto.randomBytes(32).toString("hex");
+    // const expires = new Date(Date.now() + 15 * 60 * 1000);
+
+    //  await dbconnection.query(
+    //   "UPDATE users SET resetToken = ?, resetTokenExpires = ? WHERE email = ?",
+    //   [token, expires, email]
+    // );
+
     const [user] = await dbconnection.query(
       "SELECT * FROM users WHERE email = ?",
       [email]
@@ -184,36 +200,42 @@ async function forgotPassword(req, res) {
     if (user.length === 0)
       return res.status(404).json({ msg: "User not found" });
 
-    // Generate token valid for 15 minutes
     const token = crypto.randomBytes(32).toString("hex");
     const expires = new Date(Date.now() + 15 * 60 * 1000);
 
-     await dbconnection.query(
+    await dbconnection.query(
       "UPDATE users SET resetToken = ?, resetTokenExpires = ? WHERE email = ?",
       [token, expires, email]
     );
 
-    // Send email
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-
     const link = `https://stack-campus.onrender.com/reset-password/${token}`;
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: "Password Reset Link",
-      html: `<p>Click <a href="${link}">here</a> to reset your password. The link expires in 15 minutes.</p>`,
-    });
+    console.log("✅ Reset link:", link); // <---- Add this
+    console.log("EMAIL_USER:", process.env.EMAIL_USER); // <---- Check loaded env
 
-    res.json({ msg: "Reset link sent to your  email ,please Visit your email." });
+    res.json({ msg: "Link generated successfully (email sending skipped)" });
+
+
+    // // Send email
+    // const transporter = nodemailer.createTransport({
+    //   service: "gmail",
+    //   auth: {
+    //     user: process.env.EMAIL_USER,
+    //     pass: process.env.EMAIL_PASS,
+    //   },
+    // });
+
+    // const link = `https://stack-campus.onrender.com/reset-password/${token}`;
+    // await transporter.sendMail({
+    //   from: process.env.EMAIL_USER,
+    //   to: email,
+    //   subject: "Password Reset Link",
+    //   html: `<p>Click <a href="${link}">here</a> to reset your password. The link expires in 15 minutes.</p>`,
+    // });
+
+    // res.json({ msg: "Reset link sent to your  email ,please Visit your email." });
   } catch (err) {
     console.log(err.message);
-    res.status(500).json({ msg: "Something went wrong" });
+    res.status(500).json({ msg: "Something wenttt wrong" });
   }
 }
 
