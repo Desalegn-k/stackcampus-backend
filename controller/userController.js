@@ -240,8 +240,7 @@ async function checkUser(req, res) {
 // }
 
 
-const crypto = require("crypto");
-const nodemailer = require("nodemailer");
+ 
 
 async function forgotPassword(req, res) {
   const { email } = req.body;
