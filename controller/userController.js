@@ -1,4 +1,5 @@
 // dbconnection
+ 
 const dbconnection = require("../db/dbConfig");
 const bcrypt=require("bcrypt");
 const statusCode = require("http-status-codes");
@@ -242,63 +243,48 @@ async function checkUser(req, res) {
 
 
  
-export async function forgotPassword(req, res) {
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+async function forgotPassword(req, res) {
   const { email } = req.body;
-  if (!email) return res.status(400).json({ msg: "Email is required" });
+  if (!email) return res.status(400).json({ msg: "Email required" });
 
   try {
-    // 1. Check if user exists
+    // 1️⃣ Check if user exists
     const [users] = await dbconnection.query(
       "SELECT * FROM users WHERE email = ?",
       [email]
     );
-
     if (users.length === 0)
       return res.status(404).json({ msg: "User not found" });
 
-    // 2. Generate reset token
+    // 2️⃣ Generate reset token (valid for 15 minutes)
     const token = crypto.randomBytes(32).toString("hex");
-    const expires = new Date(Date.now() + 15 * 60 * 1000); // expires in 15 min
+    const expires = new Date(Date.now() + 15 * 60 * 1000);
 
-    // 3. Save token and expiry to database
+    // 3️⃣ Store token and expiry in DB
     await dbconnection.query(
       "UPDATE users SET resetToken = ?, resetTokenExpires = ? WHERE email = ?",
       [token, expires, email]
     );
 
-    // 4. Setup Resend client
-    const resend = new Resend(process.env.RESEND_API_KEY);
-
-    // 5. Build reset link
+    // 4️⃣ Send password reset email
     const link = `https://stack-campus.onrender.com/reset-password/${token}`;
 
-    // 6. Send the email
     await resend.emails.send({
-      from: "Stack Campus-desalegn <onboarding@resend.dev>",
+      from: "Stack Campus <onboarding@resend.dev>",
       to: email,
       subject: "Password Reset Link",
-      html: `
-        <p>Hi,</p>
-        <p>You requested to reset your password. Click the link below:</p>
-        <p><a href="${link}" target="_blank">${link}</a></p>
-        <p>This link will expire in <strong>15 minutes</strong>.</p>
-        <p>If you did not request this, you can safely ignore it.</p>
-      `,
+      html: `<p>Click <a href="${link}">here</a> to reset your password. The link expires in 15 minutes.</p>`,
     });
 
-    // 7. Send success response
-    res
-      .status(200)
-      .json({ msg: "Reset link sent successfully to your email." });
+    // 5️⃣ Send success response
+    res.json({ msg: "Reset link sent to your email." });
   } catch (err) {
-    console.error("Forgot password error:", err);
-    res
-      .status(500)
-      .json({ msg: "Failed to send reset link", error: err.message });
+    console.error("❌ Forgot Password Error:", err);
+    res.status(500).json({ msg: "Something went wrong." });
   }
 }
-
-
 
 async function resetPassword(req, res) {
   const { token } = req.params;
