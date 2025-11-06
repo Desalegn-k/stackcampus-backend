@@ -224,15 +224,15 @@ async function forgotPassword(req, res) {
       },
     });
 
-    // const link = `https://stack-campus.onrender.com/reset-password/${token}`;
-    // await transporter.sendMail({
-    //   from: process.env.EMAIL_USER,
-    //   to: email,
-    //   subject: "Password Reset Link",
-    //   html: `<p>Click <a href="${link}">here</a> to reset your password. The link expires in 15 minutes.</p>`,
-    // });
+    const link = `https://stack-campus.onrender.com/reset-password/${token}`;
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Password Reset Link",
+      html: `<p>Click <a href="${link}">here</a> to reset your password. The link expires in 15 minutes.</p>`,
+    });
 
-    // res.json({ msg: "Reset link sent to your  email ,please Visit your email." });
+    res.json({ msg: "Reset link sent to your  email ,please Visit your email." });
   } catch (err) {
     console.log(err.message);
     res.status(500).json({ msg: "Something wenttt wrong" });
