@@ -1,5 +1,5 @@
 // dbconnection
-import dbconnection from "../config/db.js"; // adjust path if needed
+const dbconnection = require("../db/dbConfig");
 const bcrypt=require("bcrypt");
 const statusCode = require("http-status-codes");
 const jwt=require("jsonwebtoken")
