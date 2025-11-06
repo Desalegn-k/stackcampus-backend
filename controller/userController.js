@@ -202,7 +202,7 @@ async function forgotPassword(req, res) {
       },
     });
 
-    const link = `http://localhost:3000/reset-password/${token}`;
+    const link = `https://stack-campus.onrender.com/reset-password/${token}`;
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
