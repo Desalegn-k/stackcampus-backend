@@ -305,6 +305,11 @@ async function resetPassword(req, res) {
     if (user.length === 0) {
       return res.status(400).json({ msg: "Invalid or expired token" });
     }
+    if (password.length < 8) {
+      return res
+        .status(statusCode.BAD_REQUEST)
+        .json({ msg: "The Passswored Must Be At Least 8 Chracters" });
+    }
 
     const hashed = await bcrypt.hash(password, 10);
     await dbconnection.query(
