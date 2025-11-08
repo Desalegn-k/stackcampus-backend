@@ -277,11 +277,11 @@ async function forgotPassword(req, res) {
       from: "Stack Campus <onboarding@resend.dev>",
       to: email,
       subject: "Password Reset Link",
-      html: `<p>Click <a href="${link}">here</a> to reset your password. The link expires in 15 minutes.</p>`,
+      html: `<h3>Click <a href="${link} ">HERE</a> to reset your password. The link expires in 15 minutes.</h3>`,
     });
 
     // 5️⃣ Send success response
-    res.json({ msg: "Reset link sent to your email." });
+    res.json({ msg: "Reset link sent to your email. Please visit your email and reset your password" });
   } catch (err) {
     console.error("❌ Forgot Password Error:", err);
     res.status(500).json({ msg: "Something went wrong." });
