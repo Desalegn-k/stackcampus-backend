@@ -75,7 +75,13 @@ const app = express();
 const dbconnection = require("./db/dbConfig");
 
 // Middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: ["https://stack-campus.onrender.com"], // my frontend URL
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // Routes
