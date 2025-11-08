@@ -249,6 +249,8 @@ async function checkUser(req, res) {
 const nodemailer = require("nodemailer");
  
 
+ 
+
 async function forgotPassword(req, res) {
   const { email } = req.body;
   if (!email) return res.status(400).json({ msg: "Email required" });
@@ -266,64 +268,50 @@ async function forgotPassword(req, res) {
     const token = crypto.randomBytes(32).toString("hex");
     const expires = new Date(Date.now() + 15 * 60 * 1000);
 
-    // 3️⃣ Store token and expiry in DB
+    // 3️⃣ Store token + expiry in DB
     await dbconnection.query(
       "UPDATE users SET resetToken = ?, resetTokenExpires = ? WHERE email = ?",
       [token, expires, email]
     );
 
-    // 4️⃣ Configure Gmail transporter (App Password required)
+    // 4️⃣ Create the reset link (for hash router)
+    const link = `https://stack-campus.onrender.com/#/reset-password/${token}`;
+
+    // 5️⃣ Configure Gmail transporter
     const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 465,
-      secure: true, // true for port 465
+      service: "gmail",
       auth: {
         user: process.env.EMAIL_USER, // your Gmail address
-        pass: process.env.EMAIL_PASS, // your 16-character App Password
+        pass: process.env.EMAIL_PASS, // your Gmail App Password
       },
     });
 
-    // Optional: verify connection before sending
-    await transporter
-      .verify()
-      .then(() => console.log("✅ SMTP connection successful"))
-      .catch((err) => console.error("❌ SMTP connection failed:", err));
-
-    // 5️⃣ Create reset link (with hash routing)
-    const link = `https://stack-campus.onrender.com/#/reset-password/${token}`;
-
-    // 6️⃣ Send the email
-    await transporter.sendMail({
+    // 6️⃣ Send email
+    const mailOptions = {
       from: `"Stack Campus" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: "Password Reset Link",
       html: `
-        <div style="font-family: Arial, sans-serif; line-height: 1.5;">
-          <h2>Password Reset Request</h2>
-          <p>Hello,</p>
-          <p>We received a request to reset your password. Click the button below to set a new one:</p>
-          <a href="${link}" 
-             style="background-color: #007BFF; color: white; padding: 10px 20px; 
-                    text-decoration: none; border-radius: 5px;">
-             Reset Password
-          </a>
-          <p>This link will expire in <b>15 minutes</b>.</p>
-          <p>If you didn’t request a password reset, you can ignore this email.</p>
-          <br/>
-          <p>— The Stack Campus Team</p>
-        </div>
+        <h3>Hello,</h3>
+        <p>Click the link below to reset your password:</p>
+        <p><a href="${link}">${link}</a></p>
+        <p><b>This link expires in 15 minutes.</b></p>
       `,
-    });
+    };
 
-    // 7️⃣ Send success response
+    await transporter.sendMail(mailOptions);
+
+    // 7️⃣ Success
     res.json({
-      msg: "✅ Reset link sent to your email. Please check your inbox.",
+      msg: "Reset link sent successfully! Check your email inbox or spam folder.",
     });
   } catch (err) {
-    console.error("❌ Forgot Password Error:", err);
-    res.status(500).json({ msg: "Something went wrong." });
+    console.error("❌ Forgot Password Error:", err.message);
+    res.status(500).json({ msg: "Something went wrong while sending email." });
   }
 }
+
+module.exports = { forgotPassword };
 
  
  
