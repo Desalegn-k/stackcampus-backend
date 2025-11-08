@@ -245,7 +245,9 @@ async function checkUser(req, res) {
 
  
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+ 
+const nodemailer = require("nodemailer");
+ 
 
 async function forgotPassword(req, res) {
   const { email } = req.body;
@@ -270,23 +272,60 @@ async function forgotPassword(req, res) {
       [token, expires, email]
     );
 
-    // 4️⃣ Send password reset email
-    const link = `https://stack-campus.onrender.com/#/reset-password/${token}`;
-
-    await resend.emails.send({
-      from: "Stack Campus <onboarding@resend.dev>",
-      to: email,
-      subject: "Password Reset Link",
-      html: `<h3>Click <a href="${link} ">HERE</a> to reset your password. The link expires in 15 minutes.</h3>`,
+    // 4️⃣ Configure Gmail transporter (App Password required)
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true, // true for port 465
+      auth: {
+        user: process.env.EMAIL_USER, // your Gmail address
+        pass: process.env.EMAIL_PASS, // your 16-character App Password
+      },
     });
 
-    // 5️⃣ Send success response
-    res.json({ msg: "Reset link sent to your email. Please visit your email and reset your password" });
+    // Optional: verify connection before sending
+    await transporter
+      .verify()
+      .then(() => console.log("✅ SMTP connection successful"))
+      .catch((err) => console.error("❌ SMTP connection failed:", err));
+
+    // 5️⃣ Create reset link (with hash routing)
+    const link = `https://stack-campus.onrender.com/#/reset-password/${token}`;
+
+    // 6️⃣ Send the email
+    await transporter.sendMail({
+      from: `"Stack Campus" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: "Password Reset Link",
+      html: `
+        <div style="font-family: Arial, sans-serif; line-height: 1.5;">
+          <h2>Password Reset Request</h2>
+          <p>Hello,</p>
+          <p>We received a request to reset your password. Click the button below to set a new one:</p>
+          <a href="${link}" 
+             style="background-color: #007BFF; color: white; padding: 10px 20px; 
+                    text-decoration: none; border-radius: 5px;">
+             Reset Password
+          </a>
+          <p>This link will expire in <b>15 minutes</b>.</p>
+          <p>If you didn’t request a password reset, you can ignore this email.</p>
+          <br/>
+          <p>— The Stack Campus Team</p>
+        </div>
+      `,
+    });
+
+    // 7️⃣ Send success response
+    res.json({
+      msg: "✅ Reset link sent to your email. Please check your inbox.",
+    });
   } catch (err) {
     console.error("❌ Forgot Password Error:", err);
     res.status(500).json({ msg: "Something went wrong." });
   }
 }
+
+ 
 
 module.exports = forgotPassword;
 
